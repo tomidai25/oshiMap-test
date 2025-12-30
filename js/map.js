@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let toastTimer = null;
 
   const addressInput = document.getElementById('addressInput');
+  const startNavBtn = document.getElementById('startNav');
+  const stopNavBtn  = document.getElementById('stopNav');
+
 
   /* ==================================================
     トースト
@@ -285,8 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   const map = L.map('map').setView([start.lat, start.lng], 16);
-  const startNavBtn = document.getElementById('startNav');
-  const stopNavBtn  = document.getElementById('stopNav');
 
   function createStartMarker(lat, lng) {
     if (localStorage.getItem(BG_KEY) === 'simple') {
