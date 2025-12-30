@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ナビ</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Leaflet -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet/dist/leaflet.css"
+    />
+
+    <!-- App Style -->
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+
+    <!-- ===== 起動画面 ===== -->
+    <div id="startScreen">
+
+      <!-- 推し背景 -->
+      <div id="oshiArea">
+        <img src="./images/dk.jpg" alt="推しイラスト" />
+      </div>
+
+      <!-- ===== 起動画面カード ===== -->
+      <div class="start-card">
+        <input id="addressInput" type="text" placeholder="目的地の住所を入力" />
+        <button id="startNav">案内開始</button>
+      </div>
+    </div>
+
+
+    <!-- ==================================================
+      設定
+    ================================================== -->
+    <button id="settingsBtn" aria-label="設定">設定</button>
+
+    <!-- 設定モーダル -->
+    <div id="settingsPanel">
+      <div class="settings-card">
+
+        <button id="settingsClose" class="settings-close" aria-label="閉じる">×</button>
+
+        <div class="settings-content">
+
+          <div class="settings-scroll">
+
+            <!-- 背景設定 -->
+            <div class="setting-item colum bg-setting">
+              <label class="setting-label">背景切り替え</label>
+
+              <div class="setting-control">
+                <input type="checkbox" id="bgToggle" checked />
+              </div>
+
+              <p class="setting-description">
+                オンで初期の背景を表示します。<br />
+                オフでシンプルな背景に切り替えます。
+              </p>
+            </div>
+
+              <!-- 音声案内 -->
+              <div class="setting-item column voice-setting">
+                <div class="setting-label">音声切り替え</div>
+                <p class="setting-description">
+                  ナビ中の音声案内の声を変更できます。
+                </p>
+                <div class="custom-select">
+                  <button id="voiceSelectBtn" type="button">
+                    <span id="voiceSelectLabel">Sion</span>
+                    <span class="arrow">▾</span>
+                  </button>
+
+                  <ul id="voiceSelectList" hidden>
+
+                    <!-- 無料（常時利用可） -->
+                    <li value="oshi">
+                      <span class="voice-name">Sion</span>
+                    </li>
+
+                    <li value="normal">
+                      <span class="voice-name">AI風</span>
+                    </li>
+
+                    <!-- 広告解放対象 -->
+                    <li value="oneesan" data-ad-required="true">
+                      <span class="voice-name">お姉さん</span>
+                      <span class="voice-ad-area">
+                        <button class="watch-ad-btn" type="button">広告を見る</button>
+                        <span class="ad-timer" hidden></span>
+                      </span>
+                    </li>
+
+                    <li value="child" data-ad-required="true">
+                      <span class="voice-name">少女</span>
+                      <span class="voice-ad-area">
+                        <button class="watch-ad-btn" type="button">広告を見る</button>
+                        <span class="ad-timer" hidden></span>
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <!--ナビ中 音声切り替え-->
+    <div class="nav-voice-select custom-select">
+      <button id="navVoiceSelectBtn" type="button">
+        <span id="navVoiceSelectLabel">Sion</span>
+        <span class="arrow">▾</span>
+      </button>
+
+      <ul id="navVoiceSelectList" hidden>
+
+        <li value="oshi">
+          <span class="voice-name">Sion</span>
+        </li>
+
+        <li value="normal">
+          <span class="voice-name">AI風</span>
+        </li>
+
+        <li value="oneesan" data-ad-required="true">
+          <span class="voice-name">お姉さん</span>
+          <span class="voice-ad-area">
+            <button class="watch-ad-btn" type="button">広告を見る</button>
+            <span class="ad-timer" hidden></span>
+          </span>
+        </li>
+
+        <li value="child" data-ad-required="true">
+          <span class="voice-name">少女</span>
+          <span class="voice-ad-area">
+            <button class="watch-ad-btn" type="button">広告を見る</button>
+            <span class="ad-timer" hidden></span>
+          </span>
+        </li>
+
+      </ul>
+    </div>
+
+
+
+    <!-- ナビ中 モード切替 -->
+    <div class="mode-select nav-mode-select">
+      <button data-mode="foot" class="active">徒歩</button>
+      <button data-mode="car">車</button>
+    </div>
+
+    <!-- ==================================================
+      地図
+    ================================================== -->
+    <div id="map"></div>
+
+    <!-- ==================================================
+      案内停止ボタン
+    ================================================== -->
+    <button id="stopNav">
+      案内停止
+    </button>
+
+    <!-- ==================================================
+      Script
+    ================================================== -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="./js/map.js" defer></script>
+
+
+    <!-- トースト -->
+    <div id="toast"></div>
+
+  </body>
+</html>
