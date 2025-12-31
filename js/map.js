@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const startNavBtn = document.getElementById('startNav');
   const stopNavBtn  = document.getElementById('stopNav');
 
+  
+  
+  updateStartNavButton();
+
 
   /* ==================================================
     トースト
@@ -270,8 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
   applyVoiceMode(localStorage.getItem(VOICE_KEY) || 'normal');
   updateVoiceAdUI();
   setInterval(updateVoiceAdUI, 1000);
-
-  updateStartNavButton();
 
   /* ==================================================
     地図・ナビ
