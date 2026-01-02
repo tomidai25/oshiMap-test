@@ -26,9 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const startNavBtn = document.getElementById('startNav');
   const stopNavBtn  = document.getElementById('stopNav');
 
-  
-  
-  updateStartNavButton();
+  let goal = null;
 
 
   /* ==================================================
@@ -274,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyVoiceMode(localStorage.getItem(VOICE_KEY) || 'normal');
   updateVoiceAdUI();
   setInterval(updateVoiceAdUI, 1000);
+  updateStartNavButton();
 
   /* ==================================================
     地図・ナビ
@@ -285,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentMode = 'foot';
   let start = { lat: 35.681236, lng: 139.767125 };
-  let goal = null;
+  //let goal = null;
   let isFollowLocation = true;
 
 
@@ -319,6 +318,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   startNavBtn.addEventListener('click', () => {
     const address = addressInput.value.trim();
+    if (!goal) {
+      showToast('目的地を設定してください');
+      return;
+    }
+    
     if (address) {
       searchAddress(address);
     }
