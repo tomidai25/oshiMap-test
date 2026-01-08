@@ -515,8 +515,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let toastTimer = null;
 
   const addressInput = document.getElementById('addressInput');
-  const startNavBtn = document.getElementById('startNav');
-  const stopNavBtn  = document.getElementById('stopNav');
+  const startNavBtn  = document.getElementById('startNav');
+  const stopNavBtn   = document.getElementById('stopNav');
 
   let goal = null;
 
@@ -524,7 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
     トースト
   ================================================== */
   function showToast(message) {
-    if (!toast) return;
     toast.textContent = message;
     toast.classList.add('show');
     clearTimeout(toastTimer);
@@ -532,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==================================================
-    画面状態
+    画面切替
   ================================================== */
   function showStartScreen() {
     document.body.classList.add('is-start');
@@ -547,7 +546,43 @@ document.addEventListener('DOMContentLoaded', () => {
   showStartScreen();
 
   /* ==================================================
-    案内開始ボタン状態（住所入力のみ判定）
+    設定モーダル（← 消さない）
+  ================================================== */
+  settingsBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    settingsPanel.classList.add('open');
+    document.body.classList.add('settings-open');
+    settingsBtn.style.display = 'none';
+  });
+
+  settingsClose.addEventListener('click', e => {
+    e.stopPropagation();
+    settingsPanel.classList.remove('open');
+    document.body.classList.remove('settings-open');
+    settingsBtn.style.display = 'block';
+  });
+
+  /* ==================================================
+    背景切替
+  ================================================== */
+  const BG_KEY = 'bgMode';
+
+  function applyBgMode(mode) {
+    const isOshi = mode === 'oshi';
+    bgToggle.checked = isOshi;
+    document.body.classList.toggle('simple-bg', !isOshi);
+  }
+
+  applyBgMode(localStorage.getItem(BG_KEY) || 'oshi');
+
+  bgToggle.addEventListener('change', () => {
+    const mode = bgToggle.checked ? 'oshi' : 'simple';
+    applyBgMode(mode);
+    localStorage.setItem(BG_KEY, mode);
+  });
+
+  /* ==================================================
+    案内開始ボタン制御
   ================================================== */
   function updateStartNavButton() {
     const disabled = !addressInput.value.trim();
@@ -559,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStartNavButton();
 
   /* ==================================================
-    地図・ナビ
+    地図初期化
   ================================================== */
   let routeLayer = null;
   let gpsWatchId = null;
@@ -585,21 +620,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==================================================
-    案内開始
+    案内開始（Safari対策済）
   ================================================== */
   startNavBtn.addEventListener('click', () => {
     const address = addressInput.value.trim();
-
-    if (!address) {
-      showToast('住所を入力してください');
-      return;
-    }
+    if (!address) return;
 
     showNavScreen();
-    map.invalidateSize();
-    isFollowLocation = true;
 
-    // 住所検索 → goalセット
+    // ★ Safari対策：遅延
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+
     searchAddress(address);
 
     if (gpsWatchId) return;
@@ -616,12 +649,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (goal) drawRoute();
-      checkArrived();
     });
   });
 
   /* ==================================================
-    ナビ停止
+    案内停止
   ================================================== */
   stopNavBtn.addEventListener('click', () => {
     if (gpsWatchId) {
@@ -629,84 +661,28 @@ document.addEventListener('DOMContentLoaded', () => {
       gpsWatchId = null;
     }
 
-    isFollowLocation = false;
-
     if (routeLayer) map.removeLayer(routeLayer);
     if (goalMarker) map.removeLayer(goalMarker);
 
-    routeLayer = null;
-    goalMarker = null;
     goal = null;
-
     showStartScreen();
     showToast('ナビを終了しました');
-  });
-
-  /* ==================================================
-    モード切替
-  ================================================== */
-  document.querySelectorAll('.mode-select button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.mode-select button')
-        .forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentMode = btn.dataset.mode;
-      if (goal) drawRoute();
-    });
   });
 
   /* ==================================================
     ルート描画
   ================================================== */
   function drawRoute() {
-    const profile = currentMode === 'car' ? 'driving' : 'foot';
-
     fetch(
-      `https://router.project-osrm.org/route/v1/${profile}/` +
+      `https://router.project-osrm.org/route/v1/foot/` +
       `${start.lng},${start.lat};${goal.lng},${goal.lat}?overview=full&geometries=geojson`
     )
       .then(r => r.json())
       .then(data => {
         if (!data.routes?.[0]) return;
         if (routeLayer) map.removeLayer(routeLayer);
-        routeLayer = L.geoJSON(data.routes[0].geometry, {
-          style: { color: '#ffcc66', weight: 6, opacity: 0.85 }
-        }).addTo(map);
+        routeLayer = L.geoJSON(data.routes[0].geometry).addTo(map);
       });
-  }
-
-  /* ==================================================
-    到着判定
-  ================================================== */
-  function checkArrived() {
-    if (!goal) return;
-
-    const d = map.distance(
-      [start.lat, start.lng],
-      [goal.lat, goal.lng]
-    );
-
-    if (d < 20) {
-      showToast('目的地に到着しました');
-      navigator.geolocation.clearWatch(gpsWatchId);
-      gpsWatchId = null;
-
-      if (routeLayer) map.removeLayer(routeLayer);
-      showStartScreen();
-      goal = null;
-    }
-  }
-
-  /* ==================================================
-    目的地設定
-  ================================================== */
-  function setGoal(lat, lng) {
-    goal = { lat, lng };
-
-    if (goalMarker) map.removeLayer(goalMarker);
-    goalMarker = createGoalMarker(lat, lng);
-
-    if (gpsWatchId) drawRoute();
   }
 
   /* ==================================================
@@ -718,7 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
     )
       .then(res => res.json())
       .then(data => {
-        if (!data || !data.length) {
+        if (!data.length) {
           showToast('住所が見つかりません');
           return;
         }
@@ -726,12 +702,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const lat = parseFloat(data[0].lat);
         const lng = parseFloat(data[0].lon);
 
-        setGoal(lat, lng);
+        goal = { lat, lng };
+
+        if (goalMarker) map.removeLayer(goalMarker);
+        goalMarker = createGoalMarker(lat, lng);
+
         showToast('目的地を設定しました');
       })
-      .catch(() => {
-        showToast('検索に失敗しました');
-      });
+      .catch(() => showToast('検索に失敗しました'));
   }
 
 });
