@@ -524,6 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
     トースト
   ================================================== */
   function showToast(message) {
+    if (!toast) return;
     toast.textContent = message;
     toast.classList.add('show');
     clearTimeout(toastTimer);
@@ -531,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==================================================
-    画面切替
+    画面状態
   ================================================== */
   function showStartScreen() {
     document.body.classList.add('is-start');
@@ -546,7 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
   showStartScreen();
 
   /* ==================================================
-    設定モーダル（← 消さない）
+    設定モーダル
   ================================================== */
   settingsBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -562,8 +563,13 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsBtn.style.display = 'block';
   });
 
+  // ★ モーダル内部クリック無効化（重要）
+  settingsPanel.addEventListener('click', e => {
+    e.stopPropagation();
+  });
+
   /* ==================================================
-    背景切替
+    背景モード
   ================================================== */
   const BG_KEY = 'bgMode';
 
@@ -582,28 +588,56 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ==================================================
-    案内開始ボタン制御
+    音声（既存ロジック保持）
   ================================================== */
+  const VOICE_KEY = 'voiceMode';
+  const FREE_VOICES = ['oshi', 'normal'];
+
+  function applyVoiceMode(mode) {
+    localStorage.setItem(VOICE_KEY, mode);
+    voiceLabel.textContent = mode;
+    navVoiceLabel.textContent = mode;
+  }
+
+  /* ==================================================
+    セレクト開閉
+  ================================================== */
+  voiceBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    voiceList.hidden = !voiceList.hidden;
+  });
+
+  navVoiceBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    navVoiceList.hidden = !navVoiceList.hidden;
+  });
+
+  /* ==================================================
+    外クリックで閉じる
+  ================================================== */
+  document.addEventListener('click', () => {
+    voiceList && (voiceList.hidden = true);
+    navVoiceList && (navVoiceList.hidden = true);
+  });
+
   function updateStartNavButton() {
-    const disabled = !addressInput.value.trim();
+    const disabled = !goal;
     startNavBtn.disabled = disabled;
     startNavBtn.classList.toggle('disabled', disabled);
   }
 
-  addressInput.addEventListener('input', updateStartNavButton);
   updateStartNavButton();
 
   /* ==================================================
-    地図初期化
+    地図
   ================================================== */
   let routeLayer = null;
   let gpsWatchId = null;
   let startMarker = null;
-  let goalMarker = null;
+  let goalMarker  = null;
 
   let currentMode = 'foot';
   let start = { lat: 35.681236, lng: 139.767125 };
-  let isFollowLocation = true;
 
   const map = L.map('map').setView([start.lat, start.lng], 16);
 
@@ -620,20 +654,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==================================================
-    案内開始（Safari対策済）
+    案内開始（★ 修正点）
   ================================================== */
   startNavBtn.addEventListener('click', () => {
     const address = addressInput.value.trim();
-    if (!address) return;
+    if (!address) {
+      showToast('住所を入力してください');
+      return;
+    }
+
+    searchAddress(address);
 
     showNavScreen();
 
-    // ★ Safari対策：遅延
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 300);
-
-    searchAddress(address);
+    // ★ iOS Safari + Leaflet 対策（超重要）
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        map.invalidateSize(true);
+        map.setView([start.lat, start.lng], map.getZoom());
+      }, 200);
+    });
 
     if (gpsWatchId) return;
 
@@ -643,12 +683,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (startMarker) map.removeLayer(startMarker);
       startMarker = createStartMarker(start.lat, start.lng);
-
-      if (isFollowLocation) {
-        map.setView([start.lat, start.lng], map.getZoom());
-      }
-
-      if (goal) drawRoute();
     });
   });
 
@@ -665,33 +699,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (goalMarker) map.removeLayer(goalMarker);
 
     goal = null;
+    updateStartNavButton();
     showStartScreen();
-    showToast('ナビを終了しました');
   });
-
-  /* ==================================================
-    ルート描画
-  ================================================== */
-  function drawRoute() {
-    fetch(
-      `https://router.project-osrm.org/route/v1/foot/` +
-      `${start.lng},${start.lat};${goal.lng},${goal.lat}?overview=full&geometries=geojson`
-    )
-      .then(r => r.json())
-      .then(data => {
-        if (!data.routes?.[0]) return;
-        if (routeLayer) map.removeLayer(routeLayer);
-        routeLayer = L.geoJSON(data.routes[0].geometry).addTo(map);
-      });
-  }
 
   /* ==================================================
     住所検索
   ================================================== */
   function searchAddress(address) {
-    fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`
-    )
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
       .then(res => res.json())
       .then(data => {
         if (!data.length) {
@@ -699,17 +715,17 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
-
-        goal = { lat, lng };
+        goal = {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
 
         if (goalMarker) map.removeLayer(goalMarker);
-        goalMarker = createGoalMarker(lat, lng);
+        goalMarker = createGoalMarker(goal.lat, goal.lng);
 
+        updateStartNavButton();
         showToast('目的地を設定しました');
-      })
-      .catch(() => showToast('検索に失敗しました'));
+      });
   }
 
 });
