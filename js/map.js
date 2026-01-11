@@ -265,6 +265,28 @@ document.addEventListener('DOMContentLoaded', () => {
     startNavBtn.classList.toggle('disabled', disabled);
   }
 
+  /* ==================================================
+  住所入力 → 目的地確定
+  ================================================== */
+  let addressTimer = null;
+
+  addressInput.addEventListener('input', () => {
+    const address = addressInput.value.trim();
+
+    // 空ならリセット
+    if (!address) {
+      goal = null;
+      updateStartNavButton();
+      return;
+    }
+
+    // 入力停止後に検索（連打防止）
+    clearTimeout(addressTimer);
+    addressTimer = setTimeout(() => {
+      searchAddress(address);
+    }, 600);
+  });
+
 
   /* ==================================================
     初期化
