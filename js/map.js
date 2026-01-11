@@ -47,10 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function showStartScreen() {
     document.body.classList.add('is-start');
     document.body.classList.remove('is-nav');
+    startScreen.style.display = 'block';
   }
   function showNavScreen() {
     document.body.classList.add('is-nav');
     document.body.classList.remove('is-start');
+    startScreen.style.display = 'none';
   }
   showStartScreen();
 
