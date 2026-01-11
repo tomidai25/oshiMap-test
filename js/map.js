@@ -261,7 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateStartNavButton() {
     if (!startNavBtn) return;
 
-    const disabled = !goal;
+    const disabled = !addressInput.value.trim();
+
 
     startNavBtn.disabled = disabled;
     startNavBtn.classList.toggle('disabled', disabled);
